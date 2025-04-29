@@ -1,0 +1,101 @@
+package rules
+
+import com.udea.airline.model.Passenger
+import com.udea.airline.model.Flight
+import com.udea.airline.model.Luggage
+import com.udea.airline.model.EvaluationResponse
+
+// Upgrade a Business Class por estatus Gold/Platinum y retraso > 60 minutos
+rule "UpgradeToBusinessClassForFrequentFlyersWithDelays"
+    when
+        $passenger : Passenger(membershipStatus == "Gold" || membershipStatus == "Platinum")
+        $flight : Flight(delayMinutes > 60)
+        $response : EvaluationResponse()
+    then
+        $response.setUpgradeToBusiness(true);
+        $response.setMessage("Ascenso a clase ejecutiva por retraso y estatus.");
+end
+
+// Check-in prioritario para mayores de 65 años
+rule "PriorityCheckInForSeniors"
+    when
+        $passenger : Passenger(age > 65)
+        $response : EvaluationResponse()
+    then
+        $response.setPriorityCheckIn(true);
+end
+
+// Descuento de 10% por equipaje menor a 10 kg
+rule "DiscountForLightLuggage"
+    when
+        $luggage : Luggage(weightKg < 10)
+        $response : EvaluationResponse()
+    then
+        $response.setDiscountPercentage(10.0);
+end
+
+// Denegar upgrade si equipaje es mayor a 23 kg
+rule "DenyUpgradeForOverweightLuggage"
+    when
+        $luggage : Luggage(weightKg > 23)
+        $response : EvaluationResponse()
+    then
+        $response.setDenyUpgrade(true);
+end
+
+// Asignar asiento de salida de emergencia a adultos jóvenes (18-40 años) y asiento disponible
+rule "AssignEmergencyExitSeatToYoungAdults"
+    when
+        $passenger : Passenger(age >= 18 && age <= 40, seatPreference == "Any")
+        $flight : Flight(emergencyExitSeatAvailable == true)
+        $response : EvaluationResponse()
+    then
+        $response.setAssignEmergencyExitSeat(true);
+end
+
+// Compensación por retraso extremo (>180 minutos)
+rule "CompensationForExtremeDelays"
+    when
+        $flight : Flight(delayMinutes > 180)
+        $response : EvaluationResponse()
+    then
+        $response.setCompensationGranted(true);
+end
+
+// Puntos de lealtad extra para vuelos largos (>5 horas) excepto miembros Basic
+rule "ExtraLoyaltyPointsForLongFlights"
+    when
+        $passenger : Passenger(membershipStatus != "Basic")
+        $flight : Flight(flightDurationHours > 5)
+        $response : EvaluationResponse()
+    then
+        $response.setExtraLoyaltyPoints(500);
+end
+
+// Restringir equipaje si vuelo < 2 horas y equipaje > 15kg
+rule "RestrictLuggageOnShortFlights"
+    when
+        $flight : Flight(flightDurationHours < 2)
+        $luggage : Luggage(weightKg > 15)
+        $response : EvaluationResponse()
+    then
+        $response.setRestrictLuggage(true);
+end
+
+// Acceso a salón VIP para miembros Platinum
+rule "VipLoungeAccessForPlatinumMembers"
+    when
+        $passenger : Passenger(membershipStatus == "Platinum")
+        $response : EvaluationResponse()
+    then
+        $response.setVipLoungeAccess(true);
+end
+
+// Asiento preferencial para familias (viajan con niños y sin preferencia específica)
+rule "PreferentialSeatForFamilies"
+    when
+        $passenger : Passenger(travelingWithChildren == true, seatPreference == "Any")
+        $response : EvaluationResponse()
+    then
+        $response.setPreferentialFamilySeat(true);
+end
